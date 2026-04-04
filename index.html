@@ -41,6 +41,8 @@
             color: var(--text-main);
             line-height: 1.6;
             padding-bottom: 50px;
+            overflow-x: hidden; /* تم منع التمرير الأفقي المزعج بالكامل */
+            width: 100%;
         }
 
         /* حاوية العرض الرئيسية */
@@ -48,6 +50,7 @@
             max-width: 1300px;
             margin: 0 auto;
             padding: 40px 20px;
+            width: 100%;
         }
 
         /* العناوين والترويسة */
@@ -86,11 +89,18 @@
             margin-bottom: 50px;
         }
 
+        /* تعديل شبكات العرض لضمان عدم خروجها عن الشاشة */
         .grid-families {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
             gap: 25px;
             margin-bottom: 40px;
+        }
+
+        .grid-initiatives {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr));
+            gap: 25px;
         }
 
         /* بطاقة المحفظة (البنفسجية) */
@@ -194,6 +204,10 @@
         @media (max-width: 900px) {
             .grid-hero { grid-template-columns: 1fr; }
             .wallet-card { grid-column: span 1; }
+            .header { flex-direction: column; text-align: center; gap: 20px; }
+        }
+        @media (max-width: 500px) {
+            .info-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
@@ -220,7 +234,6 @@
 
     <!-- الإحصائيات العلوية (Hero Grid) -->
     <div class="grid-hero">
-        <!-- تم تعديل هذه البطاقة لتعكس إجمالي ما تم صرفه فعلياً -->
         <div class="card wallet-card">
             <div>
                 <h3>إجمالي ما تم صرفه للمشروع</h3>
@@ -264,7 +277,7 @@
         </div>
     </div>
 
-    <!-- قسم الرسوم البيانية الجديد (Charts Section) -->
+    <!-- قسم الرسوم البيانية -->
     <div class="section-title">
         <i class="fa-solid fa-chart-simple" style="color: var(--primary);"></i>
         التحليل المالي
@@ -272,27 +285,26 @@
     <div class="charts-section">
         <div class="card">
             <h3 style="margin-bottom: 20px; font-size: 18px; color: var(--text-main);">توزيع إجمالي الكفالات على العائلات ($)</h3>
-            <!-- تم إضافة حاوية بارتفاع ثابت لضبط حجم الشارت -->
             <div style="position: relative; height: 260px; width: 100%;">
                 <canvas id="familiesChart"></canvas>
             </div>
         </div>
         <div class="card">
             <h3 style="margin-bottom: 20px; font-size: 18px; color: var(--text-main);">هيكل المصروفات</h3>
-            <!-- تم إضافة حاوية بارتفاع ثابت لضبط حجم الشارت -->
             <div style="position: relative; height: 260px; width: 100%; display: flex; justify-content: center;">
                 <canvas id="expensesChart"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- قسم المبادرات التعليمية (تم نقله للبداية) -->
+    <!-- قسم المبادرات التعليمية -->
     <div class="initiatives-section">
         <div class="section-title">
             <i class="fa-solid fa-graduation-cap" style="color: var(--secondary);"></i>
             التحول النوعي والمبادرات التنموية
         </div>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 25px;">
+        <!-- تم استخدام grid-initiatives لضمان استجابة البطاقات دون خروجها عن الشاشة -->
+        <div class="grid-initiatives">
             <div class="card" style="display: flex; gap: 20px; align-items: center;">
                 <div style="width: 60px; height: 60px; border-radius: 15px; background: rgba(67, 24, 255, 0.1); color: var(--primary); display: flex; align-items: center; justify-content: center; font-size: 24px; flex-shrink: 0;"><i class="fa-solid fa-mosque"></i></div>
                 <div>
@@ -316,6 +328,7 @@
         تفاصيل العائلات (اضغط على العائلة لعرض التفاصيل)
     </div>
     
+    <!-- شبكة العائلات متجاوبة ولن تخرج من الشاشة -->
     <div class="grid-families" id="familiesGrid">
         <!-- سيتم تعبئة البطاقات هنا عبر الجافاسكربت -->
     </div>
@@ -624,7 +637,7 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                cutout: '70%', /* تم تقليل التجويف قليلاً ليصبح متناسقاً مع الحجم الجديد */
+                cutout: '70%', 
                 plugins: {
                     legend: {
                         position: 'bottom',
