@@ -13,6 +13,9 @@
     <!-- مكتبة الأيقونات -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     
+    <!-- مكتبة Chart.js للرسوم البيانية -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         :root {
             --bg-body: #eef1f6;
@@ -73,6 +76,14 @@
             grid-template-columns: 1.5fr 1fr 1fr 1fr;
             gap: 20px;
             margin-bottom: 40px;
+        }
+
+        /* قسم الرسوم البيانية */
+        .charts-section {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 25px;
+            margin-bottom: 50px;
         }
 
         .grid-families {
@@ -178,6 +189,7 @@
         @media (max-width: 1100px) {
             .grid-hero { grid-template-columns: 1fr 1fr; }
             .wallet-card { grid-column: span 2; }
+            .charts-section { grid-template-columns: 1fr; }
         }
         @media (max-width: 900px) {
             .grid-hero { grid-template-columns: 1fr; }
@@ -249,6 +261,28 @@
             <h3>متوسط الدفع الشهري</h3>
             <h2>$185</h2>
             <p style="color: var(--text-muted); font-size: 13px; margin-top: 5px;">تقريباً للعائلة الواحدة</p>
+        </div>
+    </div>
+
+    <!-- قسم الرسوم البيانية الجديد (Charts Section) -->
+    <div class="section-title">
+        <i class="fa-solid fa-chart-simple" style="color: var(--primary);"></i>
+        التحليل المالي
+    </div>
+    <div class="charts-section">
+        <div class="card">
+            <h3 style="margin-bottom: 20px; font-size: 18px; color: var(--text-main);">توزيع إجمالي الكفالات على العائلات ($)</h3>
+            <!-- تم إضافة حاوية بارتفاع ثابت لضبط حجم الشارت -->
+            <div style="position: relative; height: 260px; width: 100%;">
+                <canvas id="familiesChart"></canvas>
+            </div>
+        </div>
+        <div class="card">
+            <h3 style="margin-bottom: 20px; font-size: 18px; color: var(--text-main);">هيكل المصروفات</h3>
+            <!-- تم إضافة حاوية بارتفاع ثابت لضبط حجم الشارت -->
+            <div style="position: relative; height: 260px; width: 100%; display: flex; justify-content: center;">
+                <canvas id="expensesChart"></canvas>
+            </div>
         </div>
     </div>
 
@@ -495,17 +529,16 @@
         }
     ];
 
-    // دالة لتوليد بطاقات العائلات ووضعها في الـ Grid
+    // دالة لتوليد بطاقات العائلات
     function renderFamilies() {
         const grid = document.getElementById('familiesGrid');
         
         familiesData.forEach(family => {
-            // أخذ أول حرف من الاسم كأيقونة
             const initial = family.name.charAt(0);
             
             const card = document.createElement('div');
             card.className = 'card family-card';
-            card.onclick = () => openModal(family.id); // الأكشن عند الضغط
+            card.onclick = () => openModal(family.id);
             
             card.innerHTML = `
                 <div class="family-header">
@@ -525,12 +558,104 @@
         });
     }
 
-    // دالة لفتح النافذة المنبثقة وتعبئة تفاصيل العائلة
+    // دالة لتوليد الرسوم البيانية باستخدام Chart.js
+    function renderCharts() {
+        // تهيئة خط الـ Chart.js ليطابق تصميمنا
+        Chart.defaults.font.family = "'IBM Plex Sans Arabic', sans-serif";
+        Chart.defaults.color = "#A3AED0";
+
+        // 1. شارت الأعمدة (Bar Chart) لتوزيع الكفالات
+        const ctxBar = document.getElementById('familiesChart').getContext('2d');
+        const familyNames = familiesData.map(f => f.name.split(' ')[0] + ' ' + (f.name.split(' ')[1] || '')); // الاسم الأول والثاني للاختصار
+        const familyTotals = familiesData.map(f => parseInt(f.total.replace(/[\$,]/g, '')));
+
+        new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: familyNames,
+                datasets: [{
+                    label: 'إجمالي المصروف ($)',
+                    data: familyTotals,
+                    backgroundColor: 'rgba(67, 24, 255, 0.85)',
+                    hoverBackgroundColor: '#4318FF',
+                    borderRadius: 6,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#2B3674',
+                        padding: 10,
+                        titleFont: { size: 14 },
+                        bodyFont: { size: 14 }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(163, 174, 208, 0.15)', drawBorder: false },
+                        ticks: { font: { size: 13 } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 13 }, maxRotation: 45, minRotation: 45 }
+                    }
+                }
+            }
+        });
+
+        // 2. شارت الدائرة المجوفة (Doughnut Chart) لهيكل المصروفات
+        const ctxDoughnut = document.getElementById('expensesChart').getContext('2d');
+        new Chart(ctxDoughnut, {
+            type: 'doughnut',
+            data: {
+                labels: ['كفالات دورية ثابتة', 'مساعدات طارئة'],
+                datasets: [{
+                    data: [24320, 500],
+                    backgroundColor: ['#4318FF', '#FFCE20'],
+                    borderWidth: 0,
+                    hoverOffset: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '70%', /* تم تقليل التجويف قليلاً ليصبح متناسقاً مع الحجم الجديد */
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { 
+                            usePointStyle: true, 
+                            padding: 20, 
+                            font: { size: 14 }
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: '#2B3674',
+                        bodyFont: { size: 15 },
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) { label += ': '; }
+                                if (context.parsed !== null) { label += new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(context.parsed); }
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // دوال النافذة المنبثقة
     function openModal(familyId) {
         const family = familiesData.find(f => f.id === familyId);
         if(!family) return;
 
-        // تعبئة البيانات
         document.getElementById('modalAvatar').innerText = family.name.charAt(0);
         document.getElementById('modalName').innerText = family.name;
         document.getElementById('modalSubtitle').innerText = `أرملة | العمر: ${family.age} سنة`;
@@ -539,7 +664,6 @@
         document.getElementById('modalKidsCount').innerText = `${family.children.length} أبناء`;
         document.getElementById('modalTotal').innerText = family.total;
 
-        // التنبيهات
         const alertBox = document.getElementById('modalAlert');
         if (family.alert) {
             alertBox.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${family.alert}`;
@@ -548,14 +672,12 @@
             alertBox.style.display = 'none';
         }
 
-        // الأبناء
         const childrenList = document.getElementById('modalChildren');
         childrenList.innerHTML = '';
         family.children.forEach(child => {
             childrenList.innerHTML += `<li><i class="fa-solid fa-user-graduate"></i> ${child}</li>`;
         });
 
-        // جدول الصرف
         const tableBody = document.getElementById('modalTableBody');
         tableBody.innerHTML = '';
         family.payments.forEach(payment => {
@@ -567,26 +689,26 @@
             `;
         });
 
-        // إظهار النافذة
         document.getElementById('familyModal').classList.add('active');
-        document.body.style.overflow = 'hidden'; // منع التمرير في الخلفية
+        document.body.style.overflow = 'hidden';
     }
 
-    // دالة لإغلاق النافذة المنبثقة
     function closeModal() {
         document.getElementById('familyModal').classList.remove('active');
-        document.body.style.overflow = 'auto'; // إعادة التمرير للخلفية
+        document.body.style.overflow = 'auto';
     }
 
-    // إغلاق النافذة عند الضغط خارجها
     function closeModalOnOutsideClick(event) {
         if (event.target.id === 'familyModal') {
             closeModal();
         }
     }
 
-    // تشغيل دالة التوليد عند تحميل الصفحة
-    window.onload = renderFamilies;
+    // تهيئة الصفحة
+    window.onload = function() {
+        renderFamilies();
+        renderCharts(); // استدعاء دالة رسم الشارتات
+    };
 
 </script>
 
